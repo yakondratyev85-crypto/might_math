@@ -1,7 +1,14 @@
 node_modules/
 dist/
+.vite/
+.cache/
 .DS_Store
-*.local
 .env
+.env.local
 .env.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+packages/vite/
+packages/typescript/
 !src/assets/.gitkeep

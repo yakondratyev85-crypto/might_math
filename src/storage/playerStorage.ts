@@ -111,6 +111,11 @@ const normalizeState = (state: Partial<PlayerState>): PlayerState => ({
 });
 
 export const loadPlayerState = (): PlayerState => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) {
+    return createNewProgress();
+  }
+
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     const legacySaveExists = LEGACY_KEYS.some((key) => localStorage.getItem(key));
@@ -152,3 +157,5 @@ export const resetPlayerState = (): PlayerState => {
   savePlayerState(fresh);
   return fresh;
 };
+
+export const resetPlayerState = resetProgress;
