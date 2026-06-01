@@ -1,0 +1,19 @@
+{
+  "name": "math-knight",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "react": "file:packages/react",
+    "react-dom": "file:packages/react-dom",
+    "vite": "file:packages/vite",
+    "typescript": "file:packages/typescript",
+    "@vitejs/plugin-react": "file:packages/plugin-react"
+  },
+  "devDependencies": {}
+}
