@@ -1,5 +1,3 @@
-import { PrimaryButton } from './ui/PrimaryButton';
-
 type ScreenHeaderProps = {
   title: string;
   subtitle: string;
@@ -8,8 +6,12 @@ type ScreenHeaderProps = {
 
 export function ScreenHeader({ title, subtitle, onBack }: ScreenHeaderProps) {
   return (
-    <header className="screen-header glass-card">
-      {onBack && <PrimaryButton variant="ghost" onClick={onBack}>Назад</PrimaryButton>}
+    <header className="screen-header">
+      {onBack && (
+        <button className="small-button" type="button" onClick={onBack}>
+          ← Назад
+        </button>
+      )}
       <div>
         <p className="eyebrow">Math Knight</p>
         <h1>{title}</h1>

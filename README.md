@@ -1,27 +1,16 @@
 # Math Knight / Математический рыцарь
 
-Mobile-first fantasy RPG MVP для тренировки математики у детей 5–10 лет.
-
-## Stage 2 возможности
-
-- 10 глав, 100 тем, 3 подуровня на тему и 10 мини-заданий на подуровень.
-- Задания не хранятся вручную: они генерируются правилами тем в `src/game/questionGenerators.ts`.
-- Зеленая Опушка использует 4 варианта ответа, остальные главы используют ручной ввод.
-- Устойчивое сравнение ответов: `4`, `04`, пробелы и слова `больше`, `меньше`, `равно` поддерживаются.
-- Создание персонажа: имя, класс, цвет плаща и бонус класса.
-- Марафон быстрого счёта с 3 сложностями, комбо, рекордом и наградами.
-- Магазин с редкостью предметов, коллекция, сундуки, настройки звука/UI/text size.
-- Единая заменяемая система иконок через `src/data/iconRegistry.ts` и `src/components/ui/IconBadge.tsx`.
-- PWA-ready структура с `public/manifest.webmanifest`.
+Чистый MVP детской fantasy RPG-игры для тренировки математики 5–10 лет.
 
 ## Стек
 
 - React
 - Vite
 - TypeScript
-- localStorage
-- Web Audio API для лёгких звуков
-- Mobile-first glassmorphism UI
+- Mobile-first layout с шириной интерфейса до 430px
+- localStorage для прогресса игрока
+- PWA-ready структура с `manifest.webmanifest`
+- Подготовлено к будущей упаковке в Android через Capacitor
 
 ## Команды
 
@@ -39,11 +28,10 @@ src/
   main.tsx
   App.tsx
   components/
-    ui/
   screens/
   game/
   data/
   storage/
-  assets/icons/
+  assets/
   styles/
 ```

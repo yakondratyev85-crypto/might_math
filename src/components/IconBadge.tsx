@@ -1,1 +1,15 @@
-export { IconBadge } from './ui/IconBadge';
+import { getIcon, type IconName } from '../data/iconRegistry';
+
+type IconBadgeProps = {
+  icon: IconName;
+  label?: string;
+  size?: 'sm' | 'md' | 'lg';
+};
+
+export function IconBadge({ icon, label, size = 'md' }: IconBadgeProps) {
+  return (
+    <span className={`icon-badge icon-badge--${size}`} aria-label={label} role="img">
+      {getIcon(icon)}
+    </span>
+  );
+}

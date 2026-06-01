@@ -1,13 +1,7 @@
-import { chapters } from '../data/chapters';
 import { items } from '../data/items';
-import { defaultAvatar, type CharacterAvatar } from '../game/avatar';
-import type { SoundSettings } from '../game/sound';
+import { locations } from '../data/locations';
 
-const STORAGE_KEY = 'math-knight-player-v2';
-const LEGACY_STORAGE_KEY = 'math-knight-player-v1';
-
-export type InterfaceMode = 'soft' | 'contrast';
-export type TextSize = 'normal' | 'large';
+const STORAGE_KEY = 'math-knight-player-v1';
 
 export type PlayerStats = {
   correctAnswers: number;
@@ -16,27 +10,13 @@ export type PlayerStats = {
   battles: number;
 };
 
-export type PlayerSettings = {
-  sound: SoundSettings;
-  interfaceMode: InterfaceMode;
-  textSize: TextSize;
-};
-
 export type PlayerState = {
   coins: number;
   xp: number;
   heroLevel: number;
   hearts: number;
   chests: number;
-  currentChapter: string;
-  unlockedChapters: string[];
   unlockedLocations: string[];
-  completedTopics: string[];
-  completedSublevels: string[];
-  stars: Record<string, number>;
-  correctStreak: number;
-  bestMarathonScore: number;
-  avatar: CharacterAvatar;
   purchasedItems: string[];
   equippedItems: Partial<Record<'weapon' | 'shield' | 'helmet', string>>;
   collection: {
@@ -47,7 +27,6 @@ export type PlayerState = {
     achievements: string[];
   };
   stats: PlayerStats;
-  settings: PlayerSettings;
 };
 
 export const defaultPlayerState: PlayerState = {
@@ -56,15 +35,7 @@ export const defaultPlayerState: PlayerState = {
   heroLevel: 1,
   hearts: 5,
   chests: 0,
-  currentChapter: chapters[0].id,
-  unlockedChapters: [chapters[0].id],
-  unlockedLocations: ['green-edge'],
-  completedTopics: [],
-  completedSublevels: [],
-  stars: {},
-  correctStreak: 0,
-  bestMarathonScore: 0,
-  avatar: defaultAvatar,
+  unlockedLocations: [locations[0].id],
   purchasedItems: [items[0].id, items[4].id],
   equippedItems: {
     weapon: items[0].id,
@@ -83,33 +54,27 @@ export const defaultPlayerState: PlayerState = {
     wins: 0,
     battles: 0,
   },
-  settings: {
-    sound: { enabled: true, volume: 55 },
-    interfaceMode: 'soft',
-    textSize: 'normal',
-  },
 };
-
-const mergeState = (parsed: Partial<PlayerState>): PlayerState => ({
-  ...defaultPlayerState,
-  ...parsed,
-  avatar: { ...defaultPlayerState.avatar, ...parsed.avatar },
-  collection: { ...defaultPlayerState.collection, ...parsed.collection },
-  stats: { ...defaultPlayerState.stats, ...parsed.stats },
-  settings: {
-    ...defaultPlayerState.settings,
-    ...parsed.settings,
-    sound: { ...defaultPlayerState.settings.sound, ...parsed.settings?.sound },
-  },
-});
 
 export const loadPlayerState = (): PlayerState => {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) {
       return defaultPlayerState;
     }
-    return mergeState(JSON.parse(saved));
+
+    return {
+      ...defaultPlayerState,
+      ...JSON.parse(saved),
+      collection: {
+        ...defaultPlayerState.collection,
+        ...JSON.parse(saved).collection,
+      },
+      stats: {
+        ...defaultPlayerState.stats,
+        ...JSON.parse(saved).stats,
+      },
+    };
   } catch {
     return defaultPlayerState;
   }
@@ -121,5 +86,4 @@ export const savePlayerState = (state: PlayerState) => {
 
 export const resetPlayerState = () => {
   localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(LEGACY_STORAGE_KEY);
 };

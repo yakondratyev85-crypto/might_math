@@ -1,156 +1,104 @@
 import { useMemo, useState } from 'react';
+import { IconBadge } from '../components/IconBadge';
+import { ProgressBar } from '../components/ProgressBar';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { StatPill } from '../components/StatPill';
-import { AnswerInput } from '../components/ui/AnswerInput';
-import { ChoiceGrid } from '../components/ui/ChoiceGrid';
-import { GlassCard } from '../components/ui/GlassCard';
-import { IconBadge } from '../components/ui/IconBadge';
-import { PrimaryButton } from '../components/ui/PrimaryButton';
-import { ProgressBar } from '../components/ui/ProgressBar';
-import type { Chapter } from '../data/chapters';
-import { getEnemy } from '../data/enemies';
-import type { Sublevel } from '../data/sublevels';
-import type { Topic } from '../data/topics';
-import { heroDamage, heroMaxHp, monsterDamage } from '../game/battle';
-import { isAnswerCorrect } from '../game/answerValidation';
-import { generateQuestion, type MathQuestion } from '../game/questionGenerators';
-import { playSound } from '../game/sound';
+import { enemies } from '../data/enemies';
+import type { Enemy } from '../data/enemies';
+import type { Location } from '../data/locations';
+import type { MathMode } from '../data/mathModes';
+import { heroDamage, heroMaxHp, monsterDamage, monsterMaxHp } from '../game/battle';
+import { createQuestion } from '../game/mathEngine';
 import type { PlayerState } from '../storage/playerStorage';
 
 type BattleScreenProps = {
   player: PlayerState;
-  chapter: Chapter;
-  topic: Topic;
-  sublevel: Sublevel;
+  location: Location;
+  mode: MathMode;
   onBack: () => void;
-  onComplete: (result: { won: boolean; correct: number; wrong: number; coins: number; xp: number; enemyId: string; sublevelId: string; topicId: string }) => void;
+  onVictory: (enemy: Enemy, correct: number, wrong: number) => void;
+  onDefeat: (correct: number, wrong: number) => void;
 };
 
-export function BattleScreen({ player, chapter, topic, sublevel, onBack, onComplete }: BattleScreenProps) {
-  const enemy = getEnemy(topic.enemyId);
+export function BattleScreen({ player, location, mode, onBack, onVictory, onDefeat }: BattleScreenProps) {
+  const enemy = useMemo(() => {
+    const locationEnemies = enemies.filter((item) => location.enemyIds.includes(item.id));
+    return mode.id === 'boss' ? enemies.find((item) => item.id === 'super-boss') ?? locationEnemies[0] : locationEnemies[0];
+  }, [location.enemyIds, mode.id]);
   const maxHeroHp = heroMaxHp(player);
-  const maxMonsterHp = Math.max(45, enemy.hp + topic.difficulty * 6 + sublevel.difficultyBonus * 10);
-  const [taskIndex, setTaskIndex] = useState(1);
+  const maxMonsterHp = monsterMaxHp(enemy, mode);
   const [heroHp, setHeroHp] = useState(maxHeroHp);
   const [monsterHp, setMonsterHp] = useState(maxMonsterHp);
+  const [question, setQuestion] = useState(() => createQuestion(mode.id));
+  const [round, setRound] = useState(1);
   const [correct, setCorrect] = useState(0);
   const [wrong, setWrong] = useState(0);
-  const [combo, setCombo] = useState(0);
-  const [inputValue, setInputValue] = useState('');
-  const [showHint, setShowHint] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
-  const [message, setMessage] = useState('Ответь на задание, чтобы герой атаковал.');
-  const [locked, setLocked] = useState(false);
-  const [question, setQuestion] = useState<MathQuestion>(() => generateQuestion({ topic, sublevel, taskIndex: 1, answerMode: topic.answerMode }));
+  const [message, setMessage] = useState('Выбери правильный ответ!');
 
-  const reward = useMemo(() => ({
-    coins: Math.round(topic.reward.coins * sublevel.rewardMultiplier),
-    xp: Math.round(topic.reward.xp * sublevel.rewardMultiplier),
-  }), [sublevel.rewardMultiplier, topic.reward.coins, topic.reward.xp]);
+  const answer = (option: number | string) => {
+    const isCorrect = option === question.answer;
 
-  const finish = (won: boolean, nextCorrect: number, nextWrong: number) => {
-    playSound(won ? 'victory' : 'damage', player.settings.sound);
-    onComplete({ won, correct: nextCorrect, wrong: nextWrong, coins: won ? reward.coins : 3, xp: won ? reward.xp : 5, enemyId: enemy.id, sublevelId: sublevel.id, topicId: topic.id });
-  };
-
-  const goNext = () => {
-    if (taskIndex >= sublevel.miniTasks) {
-      finish(heroHp > 0, correct, wrong);
-      return;
-    }
-    const nextIndex = taskIndex + 1;
-    setTaskIndex(nextIndex);
-    setQuestion(generateQuestion({ topic, sublevel, taskIndex: nextIndex, answerMode: topic.answerMode }));
-    setInputValue('');
-    setShowHint(false);
-    setStatus('idle');
-    setMessage('Следующее задание готово.');
-    setLocked(false);
-  };
-
-  const submitAnswer = (value: string | number) => {
-    if (locked || String(value).trim() === '') {
-      return;
-    }
-    const ok = isAnswerCorrect(value, question.correctAnswer, question.answerType);
-    if (ok) {
+    if (isCorrect) {
+      const nextMonsterHp = Math.max(0, monsterHp - heroDamage(player, mode));
       const nextCorrect = correct + 1;
-      const damage = heroDamage(player, { difficulty: topic.difficulty, id: 'add10', name: topic.title, action: question.rpgAction, rounds: 1 });
-      const nextMonsterHp = Math.max(0, monsterHp - damage);
-      setCorrect(nextCorrect);
-      setCombo(combo + 1);
       setMonsterHp(nextMonsterHp);
-      setStatus('correct');
-      setMessage(`Верно! ${question.rpgAction}. ${question.explanation}`);
-      playSound('correct', player.settings.sound);
-      playSound('attack', player.settings.sound);
-      if (nextMonsterHp <= 0 && sublevel.id !== 'training') {
-        finish(true, nextCorrect, wrong);
+      setCorrect(nextCorrect);
+      setMessage(`Верно! ${mode.action} наносит урон.`);
+
+      if (nextMonsterHp <= 0 || (mode.id === 'boss' && round >= mode.rounds)) {
+        window.setTimeout(() => onVictory(enemy, nextCorrect, wrong), 450);
         return;
       }
     } else {
+      const nextHeroHp = Math.max(0, heroHp - monsterDamage(enemy, mode));
       const nextWrong = wrong + 1;
-      const damage = monsterDamage(enemy, { difficulty: topic.difficulty, id: 'subtract', name: topic.title, action: 'атака', rounds: 1 });
-      const nextHeroHp = Math.max(0, heroHp - damage);
-      setWrong(nextWrong);
-      setCombo(0);
       setHeroHp(nextHeroHp);
-      setStatus('wrong');
-      setMessage(`Почти! Правильный ответ: ${question.correctAnswer}. ${question.explanation}`);
-      playSound('wrong', player.settings.sound);
+      setWrong(nextWrong);
+      setMessage(`Почти! Правильный ответ: ${question.answer}. Монстр атакует.`);
+
       if (nextHeroHp <= 0) {
-        finish(false, correct, nextWrong);
+        window.setTimeout(() => onDefeat(correct, nextWrong), 450);
         return;
       }
     }
-    setInputValue('');
-    setLocked(true);
+
+    if (mode.id === 'boss') {
+      setRound((value) => Math.min(mode.rounds, value + 1));
+    }
+    setQuestion(createQuestion(mode.id));
   };
 
   return (
     <section className="screen battle-screen">
-      <ScreenHeader title="RPG-бой" subtitle={`${chapter.title} · ${topic.title} · ${sublevel.title}`} onBack={onBack} />
-      <div className="top-hud">
-        <StatPill icon="ui_coin" label="Монеты" value={player.coins} />
-        <StatPill icon="ui_xp" label="XP" value={player.xp} />
-        <StatPill icon="ui_heart" label="HP" value={player.hearts} />
-        <StatPill icon="ui_star" label="Комбо" value={combo} />
-      </div>
-      <GlassCard className="battle-arena" tone="strong">
-        <div className="fighter">
-          <IconBadge icon="hero_knight" size="xl" />
-          <strong>{player.avatar.name}</strong>
-          <ProgressBar value={heroHp} max={maxHeroHp} tone="hp" label={`${heroHp}/${maxHeroHp} HP`} />
+      <ScreenHeader title="Бой с монстром" subtitle={`${location.name} · ${mode.name}`} onBack={onBack} />
+
+      <div className="battle-arena">
+        <div className="fighter fighter--hero">
+          <IconBadge icon="knight" label="Герой" size="lg" />
+          <strong>Герой</strong>
+          <ProgressBar value={heroHp} max={maxHeroHp} tone="hero" />
+          <span>{heroHp}/{maxHeroHp} HP</span>
         </div>
         <div className="versus">VS</div>
-        <div className="fighter">
-          <IconBadge icon={enemy.icon} size="xl" />
+        <div className="fighter fighter--monster">
+          <IconBadge icon={enemy.icon} label={enemy.name} size="lg" />
           <strong>{enemy.name}</strong>
-          <ProgressBar value={monsterHp} max={maxMonsterHp} tone="monster" label={`${monsterHp}/${maxMonsterHp} HP`} />
+          <ProgressBar value={monsterHp} max={maxMonsterHp} tone="monster" />
+          <span>{monsterHp}/{maxMonsterHp} HP</span>
         </div>
-      </GlassCard>
-      <GlassCard className={`question-card question-card--${status}`}>
-        <div className="question-meta">
-          <span>Задание {taskIndex}/{sublevel.miniTasks}</span>
-          <span>{topic.answerMode === 'choice' ? 'Выбор ответа' : 'Ручной ввод'}</span>
-        </div>
-        <p className="visual-hint">{question.visualHint}</p>
+      </div>
+
+      <div className="question-card">
+        <span className="round-pill">Раунд {round}/{mode.rounds}</span>
+        <p>{message}</p>
         <h2>{question.prompt}</h2>
-        {topic.answerMode === 'choice' ? (
-          <ChoiceGrid options={question.options ?? []} disabled={locked} onChoose={submitAnswer} />
-        ) : (
-          <div className="manual-answer-zone">
-            <AnswerInput value={inputValue} answerType={question.answerType} disabled={locked} onChange={setInputValue} onSubmit={() => submitAnswer(inputValue)} />
-            <PrimaryButton icon="ui_attack" disabled={locked} onClick={() => submitAnswer(inputValue)}>Ответить</PrimaryButton>
-          </div>
-        )}
-        <div className="battle-actions">
-          <PrimaryButton icon="ui_hint" variant="ghost" onClick={() => setShowHint(!showHint)}>Подсказка</PrimaryButton>
-          {locked && <PrimaryButton onClick={goNext}>{taskIndex >= sublevel.miniTasks ? 'Завершить' : 'Дальше'}</PrimaryButton>}
+        <div className="answers-grid">
+          {question.options.map((option) => (
+            <button className="answer-button" type="button" key={option.toString()} onClick={() => answer(option)}>
+              {option}
+            </button>
+          ))}
         </div>
-        {showHint && <p className="hint-box">Магическая подсказка: {question.visualHint}</p>}
-        <p className="battle-message">{message}</p>
-      </GlassCard>
+      </div>
     </section>
   );
 }
