@@ -8,13 +8,15 @@ type SettingsScreenProps = {
   settings: PlayerSettings;
   onBack: () => void;
   onChange: (settings: PlayerSettings) => void;
+  onResetProgress: () => void;
 };
 
-export function SettingsScreen({ settings, onBack, onChange }: SettingsScreenProps) {
+export function SettingsScreen({ settings, onBack, onChange, onResetProgress }: SettingsScreenProps) {
   return (
     <section className="screen">
       <ScreenHeader title="Настройки" subtitle="Звук, громкость, контраст и размер текста сохраняются автоматически." onBack={onBack} />
       <GlassCard className="settings-card">
+        <p className="settings-note">Сохранения используют SAVE_VERSION = 3. Старые версии автоматически сбрасываются при запуске.</p>
         <div className="settings-row">
           <IconBadge icon="ui_sound" size="md" />
           <div>
@@ -35,6 +37,7 @@ export function SettingsScreen({ settings, onBack, onChange }: SettingsScreenPro
           <PrimaryButton variant={settings.textSize === 'normal' ? 'primary' : 'secondary'} onClick={() => onChange({ ...settings, textSize: 'normal' })}>Обычный</PrimaryButton>
           <PrimaryButton variant={settings.textSize === 'large' ? 'primary' : 'secondary'} onClick={() => onChange({ ...settings, textSize: 'large' })}>Крупный</PrimaryButton>
         </div>
+        <PrimaryButton variant="danger" icon="ui_chest" onClick={onResetProgress}>Сбросить прогресс</PrimaryButton>
       </GlassCard>
     </section>
   );

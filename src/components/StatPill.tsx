@@ -1,8 +1,8 @@
 import { IconBadge } from './IconBadge';
-import type { IconName } from '../data/iconRegistry';
+import type { IconId } from '../data/iconRegistry';
 
 type StatPillProps = {
-  icon: IconName;
+  icon: IconId;
   label: string;
   value: string | number;
 };

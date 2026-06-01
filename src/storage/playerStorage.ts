@@ -1,7 +1,17 @@
+import { chapters } from '../data/chapters';
 import { items } from '../data/items';
-import { locations } from '../data/locations';
+import type { CharacterAvatar } from '../game/avatar';
+import type { SoundSettings } from '../game/sound';
 
-const STORAGE_KEY = 'math-knight-player-v1';
+export const SAVE_VERSION = 3;
+const STORAGE_KEY = 'math-knight-player-v3';
+const LEGACY_KEYS = ['math-knight-player-v1', 'math-knight-player-v2'];
+
+export type PlayerSettings = {
+  sound: SoundSettings;
+  interfaceMode: 'soft' | 'contrast';
+  textSize: 'normal' | 'large';
+};
 
 export type PlayerStats = {
   correctAnswers: number;
@@ -11,14 +21,20 @@ export type PlayerStats = {
 };
 
 export type PlayerState = {
+  saveVersion: number;
   coins: number;
   xp: number;
   heroLevel: number;
   hearts: number;
   chests: number;
   unlockedLocations: string[];
+  unlockedChapters: string[];
+  completedSublevels: string[];
+  bestMarathonScore: number;
+  avatar: CharacterAvatar;
   purchasedItems: string[];
   equippedItems: Partial<Record<'weapon' | 'shield' | 'helmet', string>>;
+  settings: PlayerSettings;
   collection: {
     heroes: string[];
     enemies: string[];
@@ -30,16 +46,26 @@ export type PlayerState = {
 };
 
 export const defaultPlayerState: PlayerState = {
+  saveVersion: SAVE_VERSION,
   coins: 35,
   xp: 0,
   heroLevel: 1,
   hearts: 5,
   chests: 0,
-  unlockedLocations: [locations[0].id],
+  unlockedLocations: [chapters[0].locationId],
+  unlockedChapters: [chapters[0].id],
+  completedSublevels: [],
+  bestMarathonScore: 0,
+  avatar: { name: 'Ари', classId: 'knight', cloakColor: 'green' },
   purchasedItems: [items[0].id, items[4].id],
   equippedItems: {
     weapon: items[0].id,
     shield: items[4].id,
+  },
+  settings: {
+    sound: { enabled: true, volume: 75 },
+    interfaceMode: 'soft',
+    textSize: 'normal',
   },
   collection: {
     heroes: ['arithmetic-knight'],
@@ -56,34 +82,73 @@ export const defaultPlayerState: PlayerState = {
   },
 };
 
+const cloneDefaultState = (): PlayerState => JSON.parse(JSON.stringify(defaultPlayerState));
+
+const clearLegacySaves = () => {
+  LEGACY_KEYS.forEach((key) => localStorage.removeItem(key));
+};
+
+const normalizeState = (state: Partial<PlayerState>): PlayerState => ({
+  ...cloneDefaultState(),
+  ...state,
+  saveVersion: SAVE_VERSION,
+  settings: {
+    ...defaultPlayerState.settings,
+    ...state.settings,
+    sound: {
+      ...defaultPlayerState.settings.sound,
+      ...state.settings?.sound,
+    },
+  },
+  collection: {
+    ...defaultPlayerState.collection,
+    ...state.collection,
+  },
+  stats: {
+    ...defaultPlayerState.stats,
+    ...state.stats,
+  },
+});
+
 export const loadPlayerState = (): PlayerState => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
+    const legacySaveExists = LEGACY_KEYS.some((key) => localStorage.getItem(key));
+
     if (!saved) {
-      return defaultPlayerState;
+      if (legacySaveExists) {
+        clearLegacySaves();
+        const fresh = cloneDefaultState();
+        savePlayerState(fresh);
+        return fresh;
+      }
+      return cloneDefaultState();
     }
 
-    return {
-      ...defaultPlayerState,
-      ...JSON.parse(saved),
-      collection: {
-        ...defaultPlayerState.collection,
-        ...JSON.parse(saved).collection,
-      },
-      stats: {
-        ...defaultPlayerState.stats,
-        ...JSON.parse(saved).stats,
-      },
-    };
+    const parsed = JSON.parse(saved) as Partial<PlayerState>;
+    if ((parsed.saveVersion ?? 0) < SAVE_VERSION) {
+      localStorage.removeItem(STORAGE_KEY);
+      clearLegacySaves();
+      const fresh = cloneDefaultState();
+      savePlayerState(fresh);
+      return fresh;
+    }
+
+    return normalizeState(parsed);
   } catch {
-    return defaultPlayerState;
+    clearLegacySaves();
+    return cloneDefaultState();
   }
 };
 
 export const savePlayerState = (state: PlayerState) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, saveVersion: SAVE_VERSION }));
 };
 
-export const resetPlayerState = () => {
+export const resetPlayerState = (): PlayerState => {
   localStorage.removeItem(STORAGE_KEY);
+  clearLegacySaves();
+  const fresh = cloneDefaultState();
+  savePlayerState(fresh);
+  return fresh;
 };
