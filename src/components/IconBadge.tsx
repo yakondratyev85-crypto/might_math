@@ -1,7 +1,7 @@
-import { getIcon, type IconName } from '../data/iconRegistry';
+import { getIcon, type IconId } from '../data/iconRegistry';
 
 type IconBadgeProps = {
-  icon: IconName;
+  icon: IconId;
   label?: string;
   size?: 'sm' | 'md' | 'lg';
 };

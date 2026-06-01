@@ -1,36 +1,39 @@
 import { IconBadge } from '../components/IconBadge';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { locations } from '../data/locations';
-import type { Location } from '../data/locations';
+import { chapters, type Chapter } from '../data/chapters';
+import { getChapterStats, isChapterUnlocked } from '../game/progression';
 import type { PlayerState } from '../storage/playerStorage';
 
 type MapScreenProps = {
   player: PlayerState;
   onBack: () => void;
-  onPickLocation: (location: Location) => void;
+  onPickChapter: (chapter: Chapter) => void;
 };
 
-export function MapScreen({ player, onBack, onPickLocation }: MapScreenProps) {
+export function MapScreen({ player, onBack, onPickChapter }: MapScreenProps) {
   return (
-    <section className="screen">
-      <ScreenHeader title="Карта мира" subtitle="Открывай яркие fantasy-локации и выбирай путь героя." onBack={onBack} />
-      <div className="location-list">
-        {locations.map((location) => {
-          const unlocked = player.unlockedLocations.includes(location.id);
+    <section className="screen chapters-screen">
+      <ScreenHeader title="Карта глав" subtitle="10 fantasy-глав. В каждой — 10 тем, 3 подуровня и 10 мини-заданий." onBack={onBack} />
+      <div className="location-list chapter-list">
+        {chapters.map((chapter) => {
+          const unlocked = isChapterUnlocked(player, chapter.id);
+          const stats = getChapterStats(player, chapter.id);
           return (
             <button
-              className={`map-card ${unlocked ? '' : 'map-card--locked'}`}
+              className={`map-card chapter-card ${unlocked ? '' : 'map-card--locked'}`}
               type="button"
-              key={location.id}
-              onClick={() => unlocked && onPickLocation(location)}
+              key={chapter.id}
+              onClick={() => unlocked && onPickChapter(chapter)}
               disabled={!unlocked}
+              style={{ '--chapter-a': chapter.colorA, '--chapter-b': chapter.colorB } as any}
             >
-              <IconBadge icon={location.icon} label={location.name} />
+              <IconBadge icon={chapter.icon} label={chapter.title} />
               <div>
-                <h3>{location.name}</h3>
-                <p>{unlocked ? `Глава ${location.level}` : `Откроется на уровне ${location.level}`}</p>
+                <h3>Глава {chapter.order}: {chapter.title}</h3>
+                <p>{unlocked ? `${stats.completedTopics}/10 тем · ${stats.completedSublevels}/30 подуровней` : `Откроется после прогресса героя`}</p>
+                <small>{chapter.description}</small>
               </div>
-              <span className="map-status">{unlocked ? 'В бой' : '🔒'}</span>
+              <span className="map-status">{unlocked ? `${stats.percent}%` : '🔒'}</span>
             </button>
           );
         })}

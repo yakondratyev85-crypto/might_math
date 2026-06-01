@@ -3,7 +3,7 @@ export type IconDefinition = {
   emojiFallback: string;
   colorA: string;
   colorB: string;
-  type: 'emoji' | 'image';
+  type?: 'emoji' | 'image';
   svgPath?: string;
 };
 
@@ -83,3 +83,4 @@ export type IconId = keyof typeof iconRegistry;
 export type IconName = IconId;
 
 export const getIcon = (name: IconId): IconDefinition => iconRegistry[name] ?? iconRegistry.spark;
+export const getIconEmoji = (name: IconId) => getIcon(name).emojiFallback;
