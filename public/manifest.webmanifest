@@ -1,0 +1,11 @@
+{
+  "name": "Math Knight / Математический рыцарь",
+  "short_name": "Math Knight",
+  "description": "Детская fantasy RPG-игра для тренировки математики 5–10 лет.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffe7aa",
+  "theme_color": "#f7b84b",
+  "orientation": "portrait",
+  "icons": []
+}
