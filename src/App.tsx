@@ -6,6 +6,7 @@ import { HomeScreen } from './screens/HomeScreen';
 import { MapScreen } from './screens/MapScreen';
 import { ModeScreen } from './screens/ModeScreen';
 import { ProgressScreen } from './screens/ProgressScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
 import { ShopScreen } from './screens/ShopScreen';
 import { VictoryScreen } from './screens/VictoryScreen';
 import { enemies, type Enemy } from './data/enemies';
@@ -13,9 +14,9 @@ import { locations, type Location } from './data/locations';
 import type { MathMode } from './data/mathModes';
 import type { Item } from './data/items';
 import { rewards } from './data/rewards';
-import { loadPlayerState, savePlayerState, type PlayerState } from './storage/playerStorage';
+import { loadPlayerState, resetProgress, savePlayerState, type PlayerSettings, type PlayerState } from './storage/playerStorage';
 
-export type Screen = 'home' | 'map' | 'mode' | 'battle' | 'victory' | 'chests' | 'shop' | 'collection' | 'progress';
+export type Screen = 'home' | 'map' | 'mode' | 'battle' | 'victory' | 'chests' | 'shop' | 'collection' | 'progress' | 'settings';
 
 type BattleResult = {
   enemy?: Enemy;
@@ -166,6 +167,22 @@ function App() {
     });
   };
 
+
+  const updateSettings = (settings: PlayerSettings) => {
+    setPlayer((current) => ({ ...current, settings }));
+  };
+
+  const resetStoredProgress = () => {
+    if (!window.confirm('Удалить весь прогресс и начать заново?')) {
+      return;
+    }
+    setPlayer(resetProgress());
+    setSelectedLocation(locations[0]);
+    setSelectedMode(null);
+    setBattleResult({ coins: 0, xp: 0, isDefeat: false });
+    setScreen('home');
+  };
+
   return (
     <main className="app-shell">
       {screen === 'home' && <HomeScreen player={player} navigate={setScreen} />}
@@ -195,6 +212,7 @@ function App() {
       {screen === 'shop' && <ShopScreen player={player} onBack={() => setScreen('home')} onBuy={buyItem} onEquip={equipItem} />}
       {screen === 'collection' && <CollectionScreen player={player} onBack={() => setScreen('home')} />}
       {screen === 'progress' && <ProgressScreen player={player} onBack={() => setScreen('home')} />}
+      {screen === 'settings' && <SettingsScreen settings={player.settings} onBack={() => setScreen('home')} onChange={updateSettings} onResetProgress={resetStoredProgress} />}
     </main>
   );
 }

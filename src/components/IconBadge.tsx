@@ -9,7 +9,7 @@ type IconBadgeProps = {
 export function IconBadge({ icon, label, size = 'md' }: IconBadgeProps) {
   return (
     <span className={`icon-badge icon-badge--${size}`} aria-label={label} role="img">
-      {getIcon(icon)}
+      {getIcon(icon).emojiFallback}
     </span>
   );
 }

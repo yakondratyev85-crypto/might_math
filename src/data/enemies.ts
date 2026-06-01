@@ -21,3 +21,5 @@ export const enemies: Enemy[] = [
   { id: 'toxic-mushroom', name: 'Токсичный Мухомор', icon: 'mushroom', hp: 40, rewardCoins: 17, rewardXp: 24 },
   { id: 'super-boss', name: 'Супер-Босс', icon: 'boss', hp: 70, rewardCoins: 40, rewardXp: 60 },
 ];
+
+export const getEnemy = (enemyId: string) => enemies.find((enemy) => enemy.id === enemyId) ?? enemies[0];

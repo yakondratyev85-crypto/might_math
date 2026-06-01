@@ -52,6 +52,10 @@ export function HomeScreen({ player, navigate }: HomeScreenProps) {
           <IconBadge icon="chest" label="Сундуки" />
           <span>Сундуки</span>
         </button>
+        <button className="menu-tile" type="button" onClick={() => navigate('settings')}>
+          <IconBadge icon="settings" label="Настройки" />
+          <span>Настройки</span>
+        </button>
       </nav>
     </section>
   );
